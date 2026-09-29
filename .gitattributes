@@ -7,6 +7,19 @@ docker/docker-entrypoint.sh text eol=lf
 docker/Caddyfile text eol=lf
 docker/crontab.* text eol=lf
 
+# Force LF on SQL. Several migrations patch an existing function textually:
+# they read pg_get_functiondef, assert a dollar-quoted snippet occurs an exact
+# number of times, then string-replace it. psql preserves the CR inside a
+# dollar-quoted literal, while the stored function body has bare LF, so on a
+# CRLF checkout the snippet matches zero times and the migration aborts. With
+# git's default core.autocrlf=true on Windows,
+# 20260921180555_validate_bulk_bank_totals_by_account.sql raises "Unexpected
+# bulk bank totals definition" and every migration behind it is blocked. Pinned
+# for all *.sql rather than just that file so the next text-patching migration
+# cannot reintroduce it. The -text overrides further down still win for the SIE
+# backbone migrations whose exact bytes are recorded on purpose.
+*.sql text eol=lf
+
 # Generated taxonomy registry is compared byte-for-byte by `npm run
 # taxonomy:check` (CI); keep LF on Windows checkouts so the local check
 # matches what the generator writes.
